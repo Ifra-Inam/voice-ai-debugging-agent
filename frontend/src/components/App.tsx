@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { submitDebugSession } from '../services/debugApi'
 import './App.css'
 
-function Chatbot() {
+function App() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [audioFile, setAudioFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>('')
@@ -119,7 +119,7 @@ function Chatbot() {
     setLoading(true)
     setSources([])
     setToolCalls([])
-    setStatus('Tool calling: transcribing audio, reading screenshot text, and debugging the issue…')
+    setStatus('Analyzing your screenshot and voice note…')
 
     try {
       const result = await submitDebugSession(audioFile, imageFile)
@@ -508,4 +508,4 @@ function writeString(view: DataView, offset: number, value: string) {
   }
 }
 
-export default Chatbot
+export default App
