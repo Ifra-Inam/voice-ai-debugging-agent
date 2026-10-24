@@ -7,11 +7,22 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from main import run_debugger
+from main import initialize_debugger
 from ocr.ocr_setup import extract_text
 from speech.stt_setup import transcribe_audio_file
 from speech.tts_setup import speak_text
 
-app = FastAPI(title="Voice AI Debugging Agent")
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await initialize_debugger()
+    yield
+
+app = FastAPI(
+    title="Voice AI Debugging Agent",
+    lifespan=lifespan
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,7 +37,6 @@ async def process_upload(upload: UploadFile, default_suffix: str) -> str:
 
     try:
         contents = await upload.read()
-
         if not contents:
             raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
@@ -49,7 +59,8 @@ async def process_upload(upload: UploadFile, default_suffix: str) -> str:
 async def transcribe_audio(upload: UploadFile) -> str:
     path = await process_upload(upload, ".wav")
     try:
-        return await asyncio.to_thread(transcribe_audio_file, path)
+        result = await asyncio.to_thread(transcribe_audio_file, path)
+        return result
     finally:
         if os.path.exists(path):
             os.remove(path)
@@ -57,7 +68,8 @@ async def transcribe_audio(upload: UploadFile) -> str:
 async def extract_error(upload: UploadFile) -> str:
     path = await process_upload(upload, ".png")
     try:
-        return await asyncio.to_thread(extract_text, path)
+        result = await asyncio.to_thread(extract_text, path)
+        return result
     finally:
         if os.path.exists(path):
             os.remove(path)
@@ -80,6 +92,7 @@ async def debug(
     audio: UploadFile = File(...),
     screenshot: UploadFile = File(...),
 ):
+
     try:
         # Run STT and OCR concurrently
         transcript, error_text = await asyncio.gather(
@@ -103,7 +116,7 @@ async def debug(
         debug_result = await run_debugger(transcript, error_text)
 
         # Generate audio for the frontend
-        audio_data = await synthesize_speech(debug_result["answer"])
+        audio_data = await synthesize_speech(debug_result["spoken_answer"])
 
         return {
             "transcript": transcript,

@@ -9,14 +9,13 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-
 import re
 
 # Remove fenced code block markers but preserve the code inside.
 def remove_code_fences(text: str) -> str:
     def replace_fence(match: re.Match) -> str:
         code = match.group(1)
-        return f" Code example: {code} "
+        return f" Code: {code} "
 
     return re.sub(
         r"```[^\S\r\n]*[a-zA-Z0-9_+-]*[^\S\r\n]*\n?(.*?)```",
@@ -59,12 +58,12 @@ def _strip_markdown_for_speech(text: str) -> str:
         ("+", " plus "),
         ("/", " slash "),
         ("_", " underscore "),
-        ("[", " open bracket "),
-        ("]", " close bracket "),
-        ("{", " open brace "),
-        ("}", " close brace "),
-        ("(", " open parenthesis "),
-        (")", " close parenthesis "),
+        ("[", " "),
+        ("]", " "),
+        ("{", " "),
+        ("}", " "),
+        ("(", " "),
+        (")", " "),
     ]
 
     for symbol, spoken in replacements:
@@ -86,7 +85,7 @@ def speak_text(text: str):
 
     speech_key = os.getenv("API_KEY")
     speech_config = speechsdk.SpeechConfig(subscription=speech_key, endpoint=base_endpoint)
-    speech_config.speech_synthesis_voice_name = "en-US-Ava:DragonHDLatestNeural"
+    speech_config.speech_synthesis_voice_name = "en-US-AvaNeural"
 
     spoken_text = _strip_markdown_for_speech(text)
     ssml = (

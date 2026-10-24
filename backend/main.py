@@ -1,10 +1,19 @@
 import re
 import sys
 from typing import Any
+from pydantic import BaseModel, Field
 
 from langchain.agents import create_agent
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from llm.llm_setup import client
+
+class DebugResponse(BaseModel):
+    answer: str = Field(
+        description="Full debugging explanation with code and sources"
+    )
+    spoken_answer: str = Field(
+        description="Concise spoken summary of the cause and fix, under 50 words"
+    )
 
 def _content_to_text(content: Any) -> str:
 
@@ -67,8 +76,7 @@ def _collect_tool_info(messages: list[Any]) -> tuple[list[str], list[str]]:
 
     return tool_names, sources
 
-async def run_debugger(transcript: str, error_text: str) -> dict[str, Any]:
-    mcp_client = MultiServerMCPClient({
+mcp_client = MultiServerMCPClient({
         "devsearch": {
             "transport": "stdio",
             "command": sys.executable,
@@ -76,13 +84,28 @@ async def run_debugger(transcript: str, error_text: str) -> dict[str, Any]:
                 "/Users/ifrainam/voice-ai-debugging-agent/backend/mcp_server/server.py"
             ],
         }
-    })
+})
 
-    tools = await mcp_client.get_tools()
+tools = None
 
+async def initialize_debugger():
+    global tools
+
+    if tools is None:
+        tools = await mcp_client.get_tools()
+        print(f"Loaded {len(tools)} MCP tools")
+
+async def run_debugger(transcript: str, error_text: str) -> dict[str, Any]:
+
+    if tools is None:
+        raise RuntimeError(
+            "Debugger has not been initialized."
+        )
+    
     agent = create_agent(
         model=client,
         tools=tools,
+        response_format=DebugResponse,
         system_prompt=(
             "You are a developer debugging assistant. "
             "Use the available MCP tools to search GitHub issues, "
@@ -90,7 +113,10 @@ async def run_debugger(transcript: str, error_text: str) -> dict[str, Any]:
             "Base your answer on the returned search results. "
             "Do not invent sources or claim you used a tool you did not use. "
             "Explain the likely cause and practical fix. "
-            "When relevant, include the source URLs returned by the tools."
+            "Include relevant source URLs in the full answer. "
+            "The spoken answer must summarize the main cause and fix "
+            "in 2-3 short sentences, under 50 words. "
+            "Avoid Markdown and long code examples in the spoken answer."
         ),
     )
 
@@ -106,25 +132,31 @@ async def run_debugger(transcript: str, error_text: str) -> dict[str, Any]:
         "messages": [{"role": "user", "content": prompt}]
     })
 
+    structured = result.get("structured_response")
+
+    if isinstance(structured, DebugResponse):
+        answer = structured.answer
+        spoken_answer = structured.spoken_answer
+    elif isinstance(structured, dict):
+        answer = structured.get("answer", "")
+        spoken_answer = structured.get("spoken_answer", "")
+    else:
+        # Fallback if structured output isn't returned
+        answer = ""
+        spoken_answer = ""
+
+    if not answer:
+        answer = "I couldn't generate a debugging answer."
+
+    if not spoken_answer:
+        spoken_answer = answer
+
     messages = result.get("messages", [])
-
-    ai_response = ""
-    for message in reversed(messages):
-        if message.__class__.__name__ == "AIMessage":
-            content = _content_to_text(
-                getattr(message, "content", None)
-            )
-            if content.strip():
-                ai_response = content
-                break
-
-    if not ai_response:
-        ai_response = "I couldn't generate a debugging answer."
-
     tool_names, sources = _collect_tool_info(messages)
 
     return {
-        "answer": ai_response,
+        "answer": answer,
+        "spoken_answer": spoken_answer,
         "sources": sources,
         "tool_calls": tool_names,
     }

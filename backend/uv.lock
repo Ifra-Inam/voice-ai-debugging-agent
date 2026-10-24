@@ -316,6 +316,7 @@ dependencies = [
     { name = "langchain-mcp-adapters" },
     { name = "mcp", extra = ["cli"] },
     { name = "openai" },
+    { name = "pydantic" },
     { name = "truststore" },
     { name = "uvicorn" },
 ]
@@ -332,6 +333,7 @@ requires-dist = [
     { name = "langchain-mcp-adapters", specifier = ">=0.3.2" },
     { name = "mcp", extras = ["cli"], specifier = "<2" },
     { name = "openai", specifier = ">=3.36.0" },
+    { name = "pydantic", specifier = ">=2.14.1" },
     { name = "truststore", specifier = ">=0.10.5" },
     { name = "uvicorn", specifier = ">=0.54.0" },
 ]
