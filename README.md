@@ -10,11 +10,11 @@ The application brings voice input, screenshot analysis, and AI-assisted trouble
 
 - Voice capture from the browser
 - Screenshot upload and preview
-- OCR text extraction from the uploaded image
+- OCR text extraction from the uploaded image using Azure AI Content Understanding
 - Speech-to-text transcription using Azure Speech
 - AI debugging using LangChain + Azure-hosted model
 - MCP tool integration for external search and debugging support
-- Text-to-speech response playback in the UI
+- Text-to-speech response playback in the UI using Azure Speech
 - FastAPI backend for processing debug sessions
 
 ## Tech Stack
@@ -71,10 +71,9 @@ Before running the app locally, make sure you have:
 
 - Python 3.14+ (or compatible version for the project)
 - Node.js and npm
-- An Azure AI / LLM endpoint and deployment configured for LangChain
+- An Azure-hosted language model deployment configured for the LangChain integration
 - Azure AI Speech resource credentials and endpoint
 - Azure AI Content Understanding resource credentials and endpoint
-- An Azure-hosted language model deployment configured for the LangChain integration
 - Access to the MCP server environment used by the app
 
 ## Environment Setup
