@@ -74,6 +74,7 @@ Before running the app locally, make sure you have:
 - An Azure-hosted language model deployment configured for the LangChain integration
 - Azure AI Speech resource credentials and endpoint
 - Azure AI Content Understanding resource credentials and endpoint
+- A Tavily API key for external search
 - Access to the MCP server environment used by the app
 
 ## Environment Setup
